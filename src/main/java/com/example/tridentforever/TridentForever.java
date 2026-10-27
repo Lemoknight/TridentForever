@@ -38,7 +38,7 @@ import java.util.function.Supplier;
 
 @Mod(TridentForever.MODID)
 @EventBusSubscriber(modid = TridentForever.MODID)
-public class TridentForever {
+public class trident4ever {
 
     public static final String MODID = "tridentforever";
 

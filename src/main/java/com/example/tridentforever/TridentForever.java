@@ -1,4 +1,3 @@
-```java
 package com.example.tridentforever;
 
 import com.mojang.logging.LogUtils;
@@ -21,6 +20,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -73,9 +73,7 @@ public class TridentForever {
     /*
      * Tracks active tridents.
      *
-     * The map is only an in-memory index. It is not the persistent
-     * source of truth; the thrown entity itself stores the information
-     * needed to restore tracking when it is loaded again.
+     * In-memory only: tracking is lost when the server stops.
      */
     private record Tracked(
             UUID owner,
@@ -161,6 +159,29 @@ public class TridentForever {
         );
     }
 
+    /*
+     * Clean up tracking when a trident is really gone
+     * (picked up, killed, discarded). Unloading from a chunk
+     * does NOT count, so those entries are kept.
+     */
+    @SubscribeEvent
+    public static void onLeave(EntityLeaveLevelEvent event) {
+        if (event.getLevel().isClientSide()) {
+            return;
+        }
+
+        if (!(event.getEntity() instanceof ThrownTrident trident)) {
+            return;
+        }
+
+        Entity.RemovalReason reason = trident.getRemovalReason();
+
+        if (reason != null && reason.shouldDestroy()) {
+            TRACKED.remove(trident.getUUID());
+            SKY_FALLING.remove(trident.getUUID());
+        }
+    }
+
     // ------------------------------------------------------------
     // MAIN TICK
     // ------------------------------------------------------------
@@ -184,13 +205,8 @@ public class TridentForever {
 
             /*
              * Do not remove tracking simply because the entity
-             * is not currently loaded.
-             *
-             * Its chunk might be unloaded. If it is loaded again
-             * during this server session, the UUID can be found.
-             *
-             * Persistent recovery across a server restart requires
-             * persistent tracking metadata, discussed below.
+             * is not currently loaded: its chunk might be unloaded.
+             * Real removals are handled by onLeave().
              */
             if (trident == null) {
                 continue;
@@ -538,4 +554,3 @@ public class TridentForever {
         SKY_FALLING.clear();
     }
 }
-```

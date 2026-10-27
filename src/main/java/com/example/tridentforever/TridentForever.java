@@ -40,7 +40,7 @@ import java.util.function.Supplier;
 @EventBusSubscriber(modid = TridentForever.MODID)
 public class TridentForever {
 
-    public static final String MODID = "tridentforever";
+    public static final String MODID = "trident4ever";
 
     private static final double MAX_DISTANCE = 100.0D;
     private static final double SKY_HEIGHT = 400.0D;
